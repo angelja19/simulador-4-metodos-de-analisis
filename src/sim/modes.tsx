@@ -104,7 +104,7 @@ export function CompareMode() {
                 </tr>
                 <tr>
                   <td>Mallas (mallas − fuentes I)</td>
-                  <td>{c.mallas}</td>
+                  <td>{isFinite(c.mallas) ? c.mallas : '—'}</td>
                   <td>{m.ok ? '✓ resuelto' : m.error}</td>
                 </tr>
                 <tr>
@@ -115,7 +115,7 @@ export function CompareMode() {
               </tbody>
             </table>
             <p>
-              <b>Sugerencia:</b> {c.reducible ? 'reducción serie‑paralelo (0 sistemas)' : c.nodos < c.mallas ? 'NODOS' : c.mallas < c.nodos ? 'MALLAS' : 'empate: cualquiera de los dos'}.
+              <b>Sugerencia:</b> {c.reducible ? 'reducción serie‑paralelo (0 sistemas)' : !m.ok ? 'NODOS (mallas no se puede aplicar)' : c.nodos < c.mallas ? 'NODOS' : c.mallas < c.nodos ? 'MALLAS' : 'empate: cualquiera de los dos'}.
             </p>
             {n.ok && m.ok && (
               <table className="data">
@@ -250,7 +250,7 @@ function TheveninPanel({ a, terms, load, prefer, maxP }: { a: Analysis; terms: n
         <Plot
           series={[
             { label: 'P en R_L [W]', x: xs, y: xs.map((r) => loadPower(th.Eth, th.Rth, r).P) },
-            { label: 'eficiencia η × P_max', x: xs, y: xs.map((r) => loadPower(th.Eth, th.Rth, r).eff * mp.Pmax), dash: [5, 4] },
+            
           ]}
           xLabel="R_L [Ω]"
           yLabel="P [W]"
@@ -258,7 +258,7 @@ function TheveninPanel({ a, terms, load, prefer, maxP }: { a: Analysis; terms: n
           points={[{ x: th.Rth, y: mp.Pmax }]}
           height={240}
         />
-        {RLnow && <p className="small">Con la carga actual R_L = {fmtEng(RLnow, 'Ω')}: P = {fmtEng(loadPower(th.Eth, th.Rth, RLnow).P, 'W', 5)} y η = {fmtNum(loadPower(th.Eth, th.Rth, RLnow).eff * 100, 4)} %.</p>}
+        {RLnow && <p className="small">Con la carga actual R_L = {fmtEng(RLnow, 'Ω')}: P = {fmtEng(loadPower(th.Eth, th.Rth, RLnow).P, 'W', 5)} y la eficiencia del equivalente de Thévenin es η = R_L/(R_TH + R_L) = {fmtNum(loadPower(th.Eth, th.Rth, RLnow).eff * 100, 4)} % (la del circuito original puede ser distinta).</p>}
       </>
     );
   }
@@ -396,7 +396,7 @@ function SuperpositionView({ a, circuit, target }: { a: Analysis; circuit: impor
   });
   dev.push(H('Suma de las respuestas'));
   dev.push(T(`I_{${tgt.label}} = ${parts.map((p) => (p.i < 0 ? `(${texNum(p.i, 5)})` : texNum(p.i, 5))).join(' + ')} = ${texQ(iT, 'A')}`, `(${parts.length + 1})`));
-  dev.push(P(`⚠ La potencia no se superpone: suma de potencias parciales = ${fmtEng(Psum, 'W', 5)}, pero la potencia real es ${fmtEng(PT, 'W', 5)}.`));
+  dev.push(P(Math.abs(Psum - PT) > 1e-9 * Math.max(1, Math.abs(PT)) ? `⚠ La potencia no se superpone: suma de potencias parciales = ${fmtEng(Psum, 'W', 5)}, pero la potencia real es ${fmtEng(PT, 'W', 5)}.` : `⚠ En este caso coinciden porque solo una fuente aporta a ${tgt.label}; en general la potencia NO se superpone (es cuadrática).`));
   const doc: StepDoc = {
     title: 'Superposición',
     concept: 'En un circuito lineal, la respuesta a varias fuentes independientes es la suma de las respuestas a cada fuente actuando sola. Las fuentes dependientes NO se apagan.',
